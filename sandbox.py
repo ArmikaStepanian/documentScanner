@@ -13,7 +13,7 @@ def prepare_image(image):
     return thresh
 
 
-def get_contours(image):
+def get_contour(image):
     # detect the contours on the binary image using cv2.CHAIN_APPROX_NONE
     contours, hierarchy = cv.findContours(image, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
     biggest = detect_biggest_contour(contours)
@@ -42,10 +42,10 @@ img = cv.imread("resources/IMG_1074.JPG")
 img = cv.resize(img, (width, height))
 binary_image = prepare_image(img)
 img_copy_1 = img.copy()
-# detect biggest contour
-biggest_contour = get_contours(binary_image)
+# detect document contour
+document_contour = get_contour(binary_image)
 # draw contours on the original image
-cv.drawContours(img_copy_1, biggest_contour, -1, (0, 255, 0), 3)
+cv.drawContours(img_copy_1, document_contour, -1, (0, 255, 0), 3)
 
 cv.imshow('Output', img_copy_1)
 cv.waitKey(0)
