@@ -37,6 +37,26 @@ def detect_biggest_contour(contours):
     return biggest_polygonal_curve
 
 
+def warp_image(image, contour):
+    src = reorder_coordinates(contour)
+    dst = [[0, 0], [width, 0], [0, height], [width, height]]
+    matrix = cv.getPerspectiveTransform(numpy.float32(src), numpy.float32(dst))
+    image_warp = cv.warpPerspective(image, matrix, (width, height))
+    return image_warp
+
+
+def reorder_coordinates(contour):
+    src = numpy.resize(contour, (4, 2))
+    array_sum_of_coordinates = numpy.sum(src, axis=1)
+    array_sorted_sum_of_coordinates = numpy.argsort(array_sum_of_coordinates)
+    array_sorted_coordinates = numpy.array(
+        [src[array_sorted_sum_of_coordinates[0]],
+         src[array_sorted_sum_of_coordinates[1]],
+         src[array_sorted_sum_of_coordinates[2]],
+         src[array_sorted_sum_of_coordinates[3]]])
+    return array_sorted_coordinates
+
+
 # image of the document on the table
 img = cv.imread("resources/IMG_1074.JPG")
 img = cv.resize(img, (width, height))
@@ -46,7 +66,9 @@ img_copy_1 = img.copy()
 document_contour = get_contour(binary_image)
 # draw contours on the original image
 cv.drawContours(img_copy_1, document_contour, -1, (0, 255, 0), 3)
+img_copy_2 = img.copy()
+warped_image = warp_image(img_copy_2, document_contour)
 
-cv.imshow('Output', img_copy_1)
+cv.imshow('Output', warped_image)
 cv.waitKey(0)
 cv.destroyAllWindows()
