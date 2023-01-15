@@ -1,8 +1,8 @@
 import cv2 as cv
 import numpy
 
-width = 480
-height = 640
+# value, that used to reduce big image to this width and corresponding height
+typical_width = 480
 
 
 def prepare_image(image):
@@ -17,6 +17,9 @@ def get_contour(image):
     # detect the contours on the binary image using cv2.CHAIN_APPROX_NONE
     contours, hierarchy = cv.findContours(image, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
     biggest = detect_biggest_contour(contours)
+    # if array is empty (no 4 corners were detected)
+    if len(biggest) == 0:
+        raise Exception("Sorry, unable to detect contour")
     return biggest
 
 
@@ -39,6 +42,16 @@ def detect_biggest_contour(contours):
 
 def warp_image(image, contour):
     src = reorder_coordinates(contour)
+    # resize big image keeping ratio
+    compute_width = src[1][0] - src[0][0]
+    compute_height = src[2][1] - src[0][1]
+    if compute_width > typical_width:
+        ratio = float(compute_width) / compute_height
+        width = typical_width
+        height = int(width / ratio)
+    else:
+        width = compute_width
+        height = compute_height
     dst = [[0, 0], [width, 0], [0, height], [width, height]]
     matrix = cv.getPerspectiveTransform(numpy.float32(src), numpy.float32(dst))
     image_warp = cv.warpPerspective(image, matrix, (width, height))
@@ -47,6 +60,14 @@ def warp_image(image, contour):
 
 def reorder_coordinates(contour):
     src = numpy.resize(contour, (4, 2))
+    # if contour is parallel to x and doesn't need to be warped
+    if src[0][0] == src[1][0]:
+        # reorder from contour order to matrix order
+        return numpy.array(
+            [src[0],
+             src[3],
+             src[1],
+             src[2]])
     array_sum_of_coordinates = numpy.sum(src, axis=1)
     array_sorted_sum_of_coordinates = numpy.argsort(array_sum_of_coordinates)
     array_sorted_coordinates = numpy.array(
@@ -59,7 +80,6 @@ def reorder_coordinates(contour):
 
 # image of the document on the table
 img = cv.imread("resources/IMG_1074.JPG")
-img = cv.resize(img, (width, height))
 binary_image = prepare_image(img)
 img_copy_1 = img.copy()
 # detect document contour
